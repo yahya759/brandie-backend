@@ -1,0 +1,16 @@
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+sqlalchemy==2.0.30
+alembic==1.13.1
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.9
+langchain==0.2.0
+langgraph>=0.1.0
+langchain-openai==0.1.0
+instagrapi==2.0.0
+apscheduler==3.10.4
+python-dotenv==1.0.1
+pydantic-settings==2.2.1
+cryptography==42.0.5
+requests==2.31.0
