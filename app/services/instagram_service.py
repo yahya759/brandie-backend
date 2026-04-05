@@ -13,9 +13,9 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-class InstagramService:
+PROXY = "http://xfodddai:phhe36pyx9ju@31.59.20.176:6754"
 
-    PROXY = "http://xfodddai:phhe36pyx9ju@31.59.20.176:6754"
+class InstagramService:
 
     def login(self, username: str, password: str) -> dict:
         cl = Client()
