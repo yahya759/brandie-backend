@@ -15,8 +15,11 @@ logger = logging.getLogger(__name__)
 
 class InstagramService:
 
+    PROXY = "http://xfodddai:phhe36pyx9ju@31.59.20.176:6754"
+
     def login(self, username: str, password: str) -> dict:
         cl = Client()
+        cl.set_proxy(PROXY)
         cl.delay_range = [1, 3]
 
         try:
@@ -63,6 +66,7 @@ class InstagramService:
 
     def get_client(self, encrypted_session: str) -> Client:
         cl = Client()
+        cl.set_proxy(PROXY)
         cl.delay_range = [1, 3]
         session_json = decrypt(encrypted_session)
         cl.set_settings(json.loads(session_json))
