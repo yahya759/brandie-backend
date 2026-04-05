@@ -16,3 +16,4 @@ python-dotenv==1.0.1
 pydantic-settings==2.2.1
 cryptography==42.0.5
 numpy==1.26.4
+Pillow>=8.1.1
