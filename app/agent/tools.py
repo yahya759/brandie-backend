@@ -40,6 +40,7 @@ def publish_now_tool(
     hashtags: str,
     image_path: str,
 ) -> str:
+    """Publish a post to Instagram immediately."""
     db = SessionLocal()
     try:
         user = db.query(User).filter(User.id == user_id).first()
