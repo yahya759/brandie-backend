@@ -35,7 +35,17 @@ FALLBACK_MODELS = [
 
 
 def call_openrouter_chat(messages: list, tools=None) -> dict:
-    api_key = os.getenv("OPENROUTER_API_KEY") or os.getenv("OPENAI_API_KEY") or ""
+    key1 = os.getenv("OPENROUTER_API_KEY")
+    key2 = os.getenv("OPENAI_API_KEY")
+    print(f"DEBUG: OPENROUTER_API_KEY found: {bool(key1)} | Starts with: {str(key1)[:10]}")
+    print(f"DEBUG: OPENAI_API_KEY found: {bool(key2)} | Starts with: {str(key2)[:10]}")
+    
+    if key1 and str(key1).startswith("sk-or-v1-"):
+        api_key = key1
+    elif key2 and str(key2).startswith("sk-or-v1-"):
+        api_key = key2
+    else:
+        api_key = os.getenv("OPENROUTER_API_KEY") or os.getenv("OPENAI_API_KEY") or ""
     if not api_key:
         raise Exception("OPENROUTER_API_KEY not set")
 
