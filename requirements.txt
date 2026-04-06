@@ -5,9 +5,10 @@ alembic==1.13.1
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 python-multipart==0.0.9
-langchain==0.2.0
+langchain==0.2.16
+langchain-core==0.2.43
 langgraph>=0.1.0
-langchain-openai==0.1.0
+langchain-openai==0.1.23
 instagrapi==2.0.0
 apscheduler==3.10.4
 python-dotenv==1.0.1
