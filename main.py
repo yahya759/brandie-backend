@@ -39,3 +39,17 @@ app.include_router(chat.router)
 @app.get("/health")
 async def health():
     return {"status": "ok", "service": "Brandie API"}
+
+
+@app.get("/debug/env")
+async def debug_env():
+    import os
+    key_names = ["OPENROUTER_API_KEY", "OPENAI_API_KEY"]
+    result = {}
+    for name in key_names:
+        value = os.getenv(name)
+        if value:
+            result[name] = f"✅ Found: {name} (Starts with: {value[:7]}...)"
+        else:
+            result[name] = f"❌ Not Found: {name}"
+    return result
