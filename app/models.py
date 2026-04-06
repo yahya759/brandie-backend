@@ -11,7 +11,9 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(String, primary_key=True, default=generate_uuid)
-    instagram_username = Column(String, unique=True, nullable=False, index=True)
+    instagram_id = Column(String, unique=True, nullable=True, index=True)
+    instagram_token = Column(String, nullable=True)
+    instagram_username = Column(String, unique=True, nullable=True, index=True)
     session_data = Column(Text, nullable=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, server_default=func.now())
