@@ -62,6 +62,7 @@ def call_openrouter_chat(messages: list, tools=None) -> dict:
 
     for model in FALLBACK_MODELS:
         try:
+            print(f"Trying {model} with key {api_key[:10]}...")
             logger.info(f"Trying model: {model}")
 
             openai_messages = []
@@ -145,7 +146,7 @@ def call_openrouter_chat(messages: list, tools=None) -> dict:
                 ]
 
             import asyncio
-            response = asyncio.run(client.chat.completions.create(**payload))
+            response = asyncio.run(client.chat.completions.create(**payload, timeout=15.0))
             return {
                 "choices": [{
                     "message": {
