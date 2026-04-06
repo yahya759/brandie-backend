@@ -4,8 +4,10 @@ from app.config import settings
 from app.database import SessionLocal
 from app.models import Post
 from app.services.instagram_service import instagram_service
+from app.services.graph_api_service import graph_api_service
 from datetime import datetime
 import logging
+import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -31,11 +33,16 @@ def publish_scheduled_post(post_id: str):
             db.commit()
             return
 
-        result = instagram_service.publish_photo(
-            encrypted_session=user.session_data,
-            image_path=post.image_path,
-            caption=f"{post.caption}\n\n{post.hashtags or ''}",
-        )
+        loop = asyncio.new_event_loop()
+        try:
+            result = loop.run_until_complete(
+                graph_api_service.publish_photo(
+                    image_path=post.image_path,
+                    caption=f"{post.caption}\n\n{post.hashtags or ''}"
+                )
+            )
+        finally:
+            loop.close()
 
         if result["success"]:
             post.status = "published"

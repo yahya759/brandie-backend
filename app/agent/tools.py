@@ -4,10 +4,12 @@ from app.database import SessionLocal
 from app.models import Post, User
 from app.services.instagram_service import instagram_service
 from app.services.scheduler_service import schedule_post
+from app.services.graph_api_service import graph_api_service
 from datetime import datetime, timedelta
 import json
 import re
 import logging
+import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +40,6 @@ def publish_now_tool(
     hashtags: str,
     image_path: str,
 ) -> str:
-    """Publish a post to Instagram immediately."""
     db = SessionLocal()
     try:
         user = db.query(User).filter(User.id == user_id).first()
@@ -46,11 +47,16 @@ def publish_now_tool(
             return "خطأ: لم يتم ربط حساب إنستغرام."
 
         full_caption = f"{caption}\n\n{hashtags}"
-        result = instagram_service.publish_photo(
-            encrypted_session=user.session_data,
-            image_path=image_path,
-            caption=full_caption,
-        )
+        loop = asyncio.new_event_loop()
+        try:
+            result = loop.run_until_complete(
+                graph_api_service.publish_photo(
+                    image_path=image_path,
+                    caption=full_caption
+                )
+            )
+        finally:
+            loop.close()
 
         if result["success"]:
             post = Post(

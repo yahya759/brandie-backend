@@ -89,3 +89,12 @@ async def verify_2fa(
 
     token = create_access_token(user.id)
     return {"access_token": token, "token_type": "bearer"}
+
+
+@router.get("/instagram/check-token")
+async def check_instagram_token():
+    from app.services.graph_api_service import graph_api_service
+    result = await graph_api_service.check_token_validity()
+    if result["valid"]:
+        return {"status": "valid", "username": result.get("username")}
+    raise HTTPException(status_code=401, detail=result.get("error"))

@@ -13,9 +13,9 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-PROXY = "http://xfodddai:phhe36pyx9ju@31.59.20.176:6754"
-
 class InstagramService:
+
+    PROXY = "http://xfodddai:phhe36pyx9ju@31.59.20.176:6754"
 
     def login(self, username: str, password: str) -> dict:
         cl = Client()
@@ -73,13 +73,17 @@ class InstagramService:
         return cl
 
     def publish_photo(self, encrypted_session: str, image_path: str, caption: str) -> dict:
+        import asyncio
+        from app.services.graph_api_service import graph_api_service
+        
+        loop = asyncio.new_event_loop()
         try:
-            cl = self.get_client(encrypted_session)
-            media = cl.photo_upload(image_path, caption)
-            return {"success": True, "media_id": str(media.pk)}
-        except Exception as e:
-            logger.error(f"Publish error: {e}")
-            return {"success": False, "error": f"فشل النشر: {str(e)}"}
+            result = loop.run_until_complete(
+                graph_api_service.publish_photo(image_path, caption)
+            )
+            return result
+        finally:
+            loop.close()
 
 
 instagram_service = InstagramService()

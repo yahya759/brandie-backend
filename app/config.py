@@ -7,6 +7,9 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 10080
     OPENAI_API_KEY: str
     ENCRYPTION_KEY: str
+    INSTAGRAM_ACCESS_TOKEN: str = ""
+    INSTAGRAM_ACCOUNT_ID: str = ""
+    IMGBB_API_KEY: str = ""
     HUGGINGFACE_API_KEY: str = ""
     HF_SPACE_URL: str = ""
 
