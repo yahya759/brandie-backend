@@ -19,9 +19,18 @@ class AgentState(TypedDict):
 
 
 FALLBACK_MODELS = [
-    "meta-llama/llama-3-8b-instruct",
-    "google/gemini-pro-1.5",
-    "mistralai/mistral-7b-instruct",
+    "qwen/qwen3.6-plus:free",
+    "stepfun/step-3.5-flash:free",
+    "nvidia/nemotron-3-super-120b-a12b:free",
+    "arcee-ai/trinity-large-preview:free",
+    "z-ai/glm-4.5-air:free",
+    "nvidia/nemotron-3-nano-30b-a3b:free",
+    "nvidia/nemotron-nano-12b-v2-vl:free",
+    "minimax/minimax-m2.5:free",
+    "nvidia/nemotron-nano-9b-v2:free",
+    "google/gemma-3-27b-it:free",
+    "google/gemma-3-4b-it:free",
+    "google/gemma-3n-e4b-it:free",
 ]
 
 
@@ -30,9 +39,15 @@ def call_openrouter_chat(messages: list, tools=None) -> dict:
     if not api_key:
         raise Exception("OPENROUTER_API_KEY not set")
 
+    extra_headers = {
+        "HTTP-Referer": "https://huggingface.co/spaces/Yahya23112003/brandie-backend",
+        "X-Title": "Brandie AI Assistant",
+    }
+
     client = AsyncOpenAI(
         api_key=api_key,
         base_url="https://openrouter.ai/api/v1",
+        default_headers=extra_headers,
     )
 
     for model in FALLBACK_MODELS:
@@ -134,10 +149,15 @@ def call_openrouter_chat(messages: list, tools=None) -> dict:
             }
 
         except Exception as e:
-            logger.warning(f"Model {model} failed: {e}")
+            error_str = str(e)
+            status_code = getattr(getattr(e, "response", None), "status_code", 0)
+            if status_code in [401, 429, 500] or "401" in error_str or "429" in error_str or "500" in error_str:
+                logger.warning(f"Model {model} failed with {status_code}: {error_str}")
+                continue
+            logger.warning(f"Model {model} failed: {error_str}")
             continue
 
-    raise Exception("All fallback models failed")
+    raise Exception("All AI nodes are currently busy. Please try again later.")
 
 
 def agent_node(state: AgentState) -> AgentState:
@@ -180,7 +200,8 @@ def agent_node(state: AgentState) -> AgentState:
         }
     except Exception as e:
         logger.error(f"Agent node error: {e}")
-        error_msg = AIMessage(content="عذراً، حدث خطأ. حاول مرة ثانية.")
+        error_content = str(e) if "All AI nodes" in str(e) else "عذراً، حدث خطأ. حاول مرة ثانية."
+        error_msg = AIMessage(content=error_content)
         return {
             "messages": [error_msg],
             "user_id": state["user_id"],
