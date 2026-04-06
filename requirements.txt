@@ -9,10 +9,12 @@ langchain==0.2.16
 langchain-core==0.2.43
 langgraph>=0.1.0
 langchain-openai==0.1.23
-instagrapi==2.0.0
 apscheduler==3.10.4
 python-dotenv==1.0.1
 pydantic-settings==2.2.1
 cryptography==42.0.5
 requests==2.31.0
 httpx==0.27.0
+Pillow>=8.1.1
+numpy==1.26.4
+psycopg2-binary==2.9.9
