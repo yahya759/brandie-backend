@@ -33,10 +33,20 @@ async def get_current_user(
         raise HTTPException(status_code=401, detail="توكن غير صالح")
 
     instagram_id = data["id"]
+    instagram_username = data.get("username", "")
 
     user = db.query(User).filter(User.id == instagram_id).first()
     if not user:
-        raise HTTPException(status_code=401, detail="المستخدم غير موجود")
+        user = User(
+            id=instagram_id,
+            instagram_username=instagram_username,
+            instagram_token=token,
+            is_active=True,
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
     if not user.is_active:
         raise HTTPException(status_code=403, detail="الحساب غير نشط")
 
