@@ -5,7 +5,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 10080
-    OPENAI_API_KEY: str
+    OPENAI_API_KEY: str = "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"
     ENCRYPTION_KEY: str
     INSTAGRAM_ACCESS_TOKEN: str = ""
     INSTAGRAM_ACCOUNT_ID: str = ""
