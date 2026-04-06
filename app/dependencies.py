@@ -35,15 +35,23 @@ async def get_current_user(
     instagram_id = data["id"]
     instagram_username = data.get("username", "")
 
-    user = db.query(User).filter(User.id == instagram_id).first()
+    user = db.query(User).filter(
+        (User.instagram_id == instagram_id) | 
+        (User.instagram_username == instagram_username)
+    ).first()
     if not user:
         user = User(
-            id=instagram_id,
+            instagram_id=instagram_id,
             instagram_username=instagram_username,
             instagram_token=token,
             is_active=True,
         )
         db.add(user)
+        db.commit()
+        db.refresh(user)
+    elif not user.instagram_id:
+        user.instagram_id = instagram_id
+        user.instagram_token = token
         db.commit()
         db.refresh(user)
 
