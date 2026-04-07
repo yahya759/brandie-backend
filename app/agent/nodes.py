@@ -19,6 +19,7 @@ class AgentState(TypedDict):
 
 
 FALLBACK_MODELS = [
+    "google/gemini-2.0-flash-exp:free",
     "google/gemma-3-27b-it:free",
     "google/gemma-3-4b-it:free",
     "google/gemma-3n-e4b-it:free",
@@ -192,35 +193,62 @@ def agent_node(state: AgentState) -> AgentState:
     if context:
         messages.append({"role": "user", "content": "\n".join(context)})
     
-    try:
-        result = call_openrouter_chat(messages, tools=all_tools)
-        
-        content = result.get("choices", [{}])[0].get("message", {}).get("content", "")
-        tool_calls = result.get("choices", [{}])[0].get("message", {}).get("tool_calls", [])
-        
-        response = AIMessage(content=content)
-        if tool_calls:
-            response.tool_calls = [
-                {"name": tc["function"]["name"], "args": json.loads(tc["function"]["arguments"]), "id": tc.get("id", "")}
-                for tc in tool_calls
-            ]
-        
-        return {
-            "messages": [response],
-            "user_id": state["user_id"],
-            "image_path": state.get("image_path"),
-            "pending_post": state.get("pending_post")
-        }
-    except Exception as e:
-        logger.error(f"Agent node error: {e}")
-        error_content = str(e) if "All AI nodes" in str(e) else "عذراً، حدث خطأ. حاول مرة ثانية."
-        error_msg = AIMessage(content=error_content)
-        return {
-            "messages": [error_msg],
-            "user_id": state["user_id"],
-            "image_path": state.get("image_path"),
-            "pending_post": state.get("pending_post")
-        }
+    last_user_msg = ""
+    for msg in reversed(messages):
+        if isinstance(msg, dict) and msg.get("role") == "user":
+            last_user_msg = msg.get("content", "").lower()
+            break
+    
+    wants_post = any(x in last_user_msg for x in ["نشر", "post", "publish", "انشر", "رفع"])
+    
+    for attempt in range(3):
+        try:
+            result = call_openrouter_chat(messages, tools=all_tools)
+            
+            content = result.get("choices", [{}])[0].get("message", {}).get("content", "")
+            tool_calls = result.get("choices", [{}])[0].get("message", {}).get("tool_calls", [])
+            
+            if wants_post and not tool_calls and attempt < 2:
+                logger.warning(f"Text fallback detected on attempt {attempt + 1}, retrying...")
+                messages.append({"role": "user", "content": content})
+                messages.append({"role": "user", "content": "Please execute the Instagram tool to post this content."})
+                continue
+            
+            response = AIMessage(content=content)
+            if tool_calls:
+                response.tool_calls = [
+                    {"name": tc["function"]["name"], "args": json.loads(tc["function"]["arguments"]), "id": tc.get("id", "")}
+                    for tc in tool_calls
+                ]
+            
+            return {
+                "messages": [response],
+                "user_id": state["user_id"],
+                "image_path": state.get("image_path"),
+                "pending_post": state.get("pending_post")
+            }
+        except Exception as e:
+            logger.error(f"Agent node error: {e}")
+            if "All AI nodes" in str(e):
+                error_content = str(e)
+                error_msg = AIMessage(content=error_content)
+                return {
+                    "messages": [error_msg],
+                    "user_id": state["user_id"],
+                    "image_path": state.get("image_path"),
+                    "pending_post": state.get("pending_post")
+                }
+            if attempt < 2:
+                continue
+    
+    error_content = "عذراً، حدث خطأ. حاول مرة ثانية."
+    error_msg = AIMessage(content=error_content)
+    return {
+        "messages": [error_msg],
+        "user_id": state["user_id"],
+        "image_path": state.get("image_path"),
+        "pending_post": state.get("pending_post")
+    }
 
 
 def tools_node(state: AgentState) -> AgentState:
