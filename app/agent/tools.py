@@ -33,8 +33,6 @@ def generate_image_prompt_tool(topic: str) -> str:
     })
 
 
-DEFAULT_IMAGE_URL = "https://i.imgflip.com/1bij.jpg"
-
 @tool
 def publish_now_tool(
     user_id: str = "",
@@ -48,17 +46,13 @@ def publish_now_tool(
     image_path = image_path or ""
     
     if not caption and not image_path:
-        return "خطأ: لمProvide either text (caption) or an image to post."
-    
-    effective_image_path = image_path
-    if image_path:
-        effective_image_path = image_path
-    elif caption:
-        effective_image_path = DEFAULT_IMAGE_URL
+        return "خطأ: Provide text (caption), an image, or both."
     
     effective_caption = caption
     if hashtags:
         effective_caption = f"{caption}\n\n{hashtags}" if caption else hashtags
+    
+    effective_image_path = image_path if image_path else "text_only"
     
     db = SessionLocal()
     try:
@@ -77,12 +71,12 @@ def publish_now_tool(
         finally:
             loop.close()
 
-        if result["success"]:
+        if result.get("success"):
             post = Post(
                 user_id=user_id,
                 caption=caption,
                 hashtags=hashtags,
-                image_path=effective_image_path,
+                image_path=image_path or "text_only",
                 status="published",
                 published_at=datetime.utcnow(),
             )
@@ -90,7 +84,7 @@ def publish_now_tool(
             db.commit()
             return "تم النشر بنجاح على إنستغرام ✅"
         else:
-            return f"فشل النشر: {result['error']}"
+            return f"فشل النشر: {result.get('error', 'Unknown error')}"
 
     except Exception as e:
         logger.error(f"publish_now_tool error: {e}")
@@ -117,9 +111,9 @@ def schedule_post_tool(
         return "خطأ: حدد وقت النشر مثال: 'بكرا الساعة 8 ص'"
     
     if not caption and not image_path:
-        return "خطأ:Provide either text (caption) or an image to schedule."
+        return "خطأ: Provide text (caption), an image, or both."
     
-    effective_image_path = image_path or DEFAULT_IMAGE_URL
+    effective_image_path = image_path if image_path else "text_only"
     
     db = SessionLocal()
     try:
@@ -133,7 +127,7 @@ def schedule_post_tool(
             user_id=user_id,
             caption=caption,
             hashtags=hashtags,
-            image_path=effective_image_path,
+            image_path=image_path or "text_only",
             status="scheduled",
             scheduled_at=scheduled_at,
         )
