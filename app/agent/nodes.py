@@ -19,6 +19,9 @@ class AgentState(TypedDict):
 
 
 FALLBACK_MODELS = [
+    "google/gemma-3-27b-it:free",
+    "google/gemma-3-4b-it:free",
+    "google/gemma-3n-e4b-it:free",
     "qwen/qwen3.6-plus:free",
     "stepfun/step-3.5-flash:free",
     "nvidia/nemotron-3-super-120b-a12b:free",
@@ -28,9 +31,6 @@ FALLBACK_MODELS = [
     "nvidia/nemotron-nano-12b-v2-vl:free",
     "minimax/minimax-m2.5:free",
     "nvidia/nemotron-nano-9b-v2:free",
-    "google/gemma-3-27b-it:free",
-    "google/gemma-3-4b-it:free",
-    "google/gemma-3n-e4b-it:free",
 ]
 
 
@@ -146,26 +146,28 @@ def call_openrouter_chat(messages: list, tools=None) -> dict:
                 ]
 
             import asyncio
-            response = asyncio.run(client.chat.completions.create(**payload, timeout=15.0))
-            return {
-                "choices": [{
-                    "message": {
-                        "content": response.choices[0].message.content or "",
-                        "tool_calls": [
-                            {"function": {"name": tc.function.name, "arguments": json.dumps(tc.function.arguments)}, "id": tc.id}
-                            for tc in response.choices[0].message.tool_calls or []
-                        ]
-                    }
-                }]
-            }
-
-        except Exception as e:
-            error_str = str(e)
-            status_code = getattr(getattr(e, "response", None), "status_code", 0)
-            if status_code in [401, 429, 500] or "401" in error_str or "429" in error_str or "500" in error_str:
-                logger.warning(f"Model {model} failed with {status_code}: {error_str}")
-                continue
-            logger.warning(f"Model {model} failed: {error_str}")
+            try:
+                response = asyncio.run(client.chat.completions.create(**payload, timeout=15.0))
+                return {
+                    "choices": [{
+                        "message": {
+                            "content": response.choices[0].message.content or "",
+                            "tool_calls": [
+                                {"function": {"name": tc.function.name, "arguments": json.dumps(tc.function.arguments)}, "id": tc.id}
+                                for tc in response.choices[0].message.tool_calls or []
+                            ]
+                        }
+                    }]
+                }
+            except Exception as inner_e:
+                inner_str = str(inner_e)
+                inner_status = getattr(getattr(inner_e, "response", None), "status_code", 0)
+                if inner_status in [401, 429, 500, 503] or any(x in inner_str for x in ["429", "500", "503", "timeout", "Timeout", "rate"]):
+                    logger.warning(f"Model {model} fast-fail: {inner_status} {inner_str}")
+                    continue
+                raise
+        except Exception as outer_e:
+            logger.warning(f"Model {model} error: {str(outer_e)}")
             continue
 
     raise Exception("All AI nodes are currently busy. Please try again later.")
