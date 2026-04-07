@@ -96,5 +96,8 @@ async def check_instagram_token():
     from app.services.graph_api_service import graph_api_service
     result = await graph_api_service.check_token_validity()
     if result["valid"]:
-        return {"status": "valid", "username": result.get("username")}
+        response = {"status": "valid", "username": result.get("username")}
+        if result.get("ig_account_id"):
+            response["ig_account_id"] = result["ig_account_id"]
+        return response
     raise HTTPException(status_code=401, detail=result.get("error"))
