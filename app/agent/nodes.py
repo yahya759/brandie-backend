@@ -242,7 +242,20 @@ def tools_node(state: AgentState) -> AgentState:
 
     for tool_call in last_message.tool_calls:
         tool_name = tool_call["name"]
-        args_dict = tool_call.get("args") or {}
+        
+        raw_args = tool_call.get("args")
+        if raw_args is None:
+            args_dict = {}
+        elif isinstance(raw_args, dict):
+            args_dict = raw_args
+        elif isinstance(raw_args, str):
+            try:
+                args_dict = json.loads(raw_args)
+            except json.JSONDecodeError:
+                args_dict = {"caption": raw_args}
+        else:
+            args_dict = {}
+        
         tool_args = {k: v for k, v in args_dict.items() if v is not None}
 
         if tool_name in ["publish_now_tool", "schedule_post_tool"]:
