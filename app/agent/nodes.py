@@ -242,18 +242,27 @@ def tools_node(state: AgentState) -> AgentState:
 
     for tool_call in last_message.tool_calls:
         tool_name = tool_call["name"]
-        tool_args = dict(tool_call["args"])
+        args_dict = tool_call.get("args") or {}
+        tool_args = {k: v for k, v in args_dict.items() if v is not None}
 
         if tool_name in ["publish_now_tool", "schedule_post_tool"]:
-            tool_args["user_id"] = state["user_id"]
+            if state.get("user_id"):
+                tool_args["user_id"] = state["user_id"]
             if state.get("image_path"):
                 tool_args["image_path"] = state["image_path"]
+
+        if not tool_args:
+            tool_messages.append(
+                ToolMessage(content="خطأ: لا توجد بيانات للمعالجة", tool_call_id=tool_call["id"])
+            )
+            continue
 
         tool_fn = tool_map.get(tool_name)
         if tool_fn:
             try:
                 result = tool_fn.invoke(tool_args)
             except Exception as e:
+                logger.error(f"Tool {tool_name} error: {e}")
                 result = f"خطأ في تنفيذ الأداة: {str(e)}"
         else:
             result = f"أداة غير موجودة: {tool_name}"

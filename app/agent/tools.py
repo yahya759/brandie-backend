@@ -33,27 +33,45 @@ def generate_image_prompt_tool(topic: str) -> str:
     })
 
 
+DEFAULT_IMAGE_URL = "https://i.imgflip.com/1bij.jpg"
+
 @tool
 def publish_now_tool(
-    user_id: str,
-    caption: str,
-    hashtags: str,
-    image_path: str,
+    user_id: str = "",
+    caption: str = "",
+    hashtags: str = "",
+    image_path: str = "",
 ) -> str:
-    """Publish a post to Instagram immediately."""
+    """Publish a post to Instagram immediately. Caption, hashtags, and image_path are optional."""
+    caption = caption or ""
+    hashtags = hashtags or ""
+    image_path = image_path or ""
+    
+    if not caption and not image_path:
+        return "خطأ: لمProvide either text (caption) or an image to post."
+    
+    effective_image_path = image_path
+    if image_path:
+        effective_image_path = image_path
+    elif caption:
+        effective_image_path = DEFAULT_IMAGE_URL
+    
+    effective_caption = caption
+    if hashtags:
+        effective_caption = f"{caption}\n\n{hashtags}" if caption else hashtags
+    
     db = SessionLocal()
     try:
         user = db.query(User).filter(User.id == user_id).first()
         if not user or not user.session_data:
             return "خطأ: لم يتم ربط حساب إنستغرام."
 
-        full_caption = f"{caption}\n\n{hashtags}"
         loop = asyncio.new_event_loop()
         try:
             result = loop.run_until_complete(
                 graph_api_service.publish_photo(
-                    image_path=image_path,
-                    caption=full_caption
+                    image_path=effective_image_path,
+                    caption=effective_caption
                 )
             )
         finally:
@@ -64,7 +82,7 @@ def publish_now_tool(
                 user_id=user_id,
                 caption=caption,
                 hashtags=hashtags,
-                image_path=image_path,
+                image_path=effective_image_path,
                 status="published",
                 published_at=datetime.utcnow(),
             )
@@ -83,24 +101,39 @@ def publish_now_tool(
 
 @tool
 def schedule_post_tool(
-    user_id: str,
-    caption: str,
-    hashtags: str,
-    image_path: str,
-    scheduled_time_str: str,
+    user_id: str = "",
+    caption: str = "",
+    hashtags: str = "",
+    image_path: str = "",
+    scheduled_time_str: str = "",
 ) -> str:
-    """Schedule a post to be published at a specific time."""
+    """Schedule a post to be published at a specific time. All fields optional."""
+    caption = caption or ""
+    hashtags = hashtags or ""
+    image_path = image_path or ""
+    scheduled_time_str = scheduled_time_str or ""
+    
+    if not scheduled_time_str:
+        return "خطأ: حدد وقت النشر مثال: 'بكرا الساعة 8 ص'"
+    
+    if not caption and not image_path:
+        return "خطأ:Provide either text (caption) or an image to schedule."
+    
+    effective_image_path = image_path or DEFAULT_IMAGE_URL
+    
     db = SessionLocal()
     try:
         scheduled_at = parse_time(scheduled_time_str)
         if not scheduled_at:
             return "لم أفهم الوقت المحدد. قولي مثلاً: 'بكرا الصبح الساعة 8' أو 'الساعة 3 العصر'"
 
+        full_caption = f"{caption}\n\n{hashtags}" if caption else hashtags
+        
         post = Post(
             user_id=user_id,
             caption=caption,
             hashtags=hashtags,
-            image_path=image_path,
+            image_path=effective_image_path,
             status="scheduled",
             scheduled_at=scheduled_at,
         )
@@ -108,7 +141,7 @@ def schedule_post_tool(
         db.commit()
         db.refresh(post)
 
-        schedule_post(post.id, scheduled_at)
+        schedule_post(str(post.id), scheduled_at)
 
         time_formatted = scheduled_at.strftime("%Y-%m-%d الساعة %H:%M")
         return f"تم الجدولة ✅ سينشر المنشور {time_formatted}"
