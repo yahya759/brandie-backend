@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+import asyncio
 
 from openai import AsyncOpenAI
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
@@ -26,18 +27,17 @@ FALLBACK_MODELS = [
 ]
 
 
-def call_openrouter_chat(messages: list, tools=None) -> dict:
+async def call_openrouter_chat(messages: list, tools=None) -> dict:
     key1 = os.getenv("OPENROUTER_API_KEY")
     key2 = os.getenv("OPENAI_API_KEY")
-    print(f"DEBUG: OPENROUTER_API_KEY found: {bool(key1)} | Starts with: {str(key1)[:10]}")
-    print(f"DEBUG: OPENAI_API_KEY found: {bool(key2)} | Starts with: {str(key2)[:10]}")
     
     if key1 and str(key1).startswith("sk-or-v1-"):
         api_key = key1
     elif key2 and str(key2).startswith("sk-or-v1-"):
         api_key = key2
     else:
-        api_key = os.getenv("OPENROUTER_API_KEY") or os.getenv("OPENAI_API_KEY") or ""
+        api_key = key1 or key2 or ""
+    
     if not api_key:
         raise Exception("OPENROUTER_API_KEY not set")
 
@@ -52,11 +52,26 @@ def call_openrouter_chat(messages: list, tools=None) -> dict:
         default_headers=extra_headers,
     )
 
-    for model in FALLBACK_MODELS:
-        try:
-            print(f"Trying {model} with key {api_key[:10]}...")
-            logger.info(f"Trying model: {model}")
+    FALLBACK_MODELS = [
+        "meta-llama/llama-3.3-70b-instruct:free",
+        "meta-llama/llama-3.1-8b-instruct:free",
+        "mistralai/mistral-7b-instruct:free",
+        "qwen/qwen-2.5-72b-instruct:free",
+        "deepseek/deepseek-r1-distill-llama-70b:free",
+    ]
 
+    TOOL_SUPPORTED_MODELS = [
+        "meta-llama/llama-3.3-70b-instruct:free",
+        "mistralai/mistral-7b-instruct:free",
+        "qwen/qwen-2.5-72b-instruct:free",
+    ]
+
+    models_to_try = TOOL_SUPPORTED_MODELS if tools else FALLBACK_MODELS
+
+    for model in models_to_try:
+        try:
+            print(f"Trying {model}...")
+            
             openai_messages = []
             for msg in messages:
                 if isinstance(msg, dict):
@@ -74,97 +89,40 @@ def call_openrouter_chat(messages: list, tools=None) -> dict:
             }
 
             if tools:
-                payload["tools"] = [
-                    {
-                        "type": "function",
-                        "function": {
-                            "name": "generate_caption_tool",
-                            "description": "Generate a professional Instagram caption with hashtags.",
-                            "parameters": {
-                                "type": "object",
-                                "properties": {
-                                    "topic": {"type": "string", "description": "The topic or theme of the post"},
-                                    "tone": {"type": "string", "description": "The tone (engaging, inspirational, professional, humorous)", "default": "engaging"}
-                                },
-                                "required": ["topic"]
-                            }
-                        }
-                    },
-                    {
-                        "type": "function",
-                        "function": {
-                            "name": "generate_image_prompt_tool",
-                            "description": "Generate an English image prompt for AI image generators",
-                            "parameters": {
-                                "type": "object",
-                                "properties": {
-                                    "topic": {"type": "string", "description": "The topic of the post in Arabic or English"}
-                                },
-                                "required": ["topic"]
-                            }
-                        }
-                    },
-                    {
-                        "type": "function",
-                        "function": {
-                            "name": "publish_now_tool",
-                            "description": "Publish a post to Instagram immediately.",
-                            "parameters": {
-                                "type": "object",
-                                "properties": {
-                                    "caption": {"type": "string", "description": "The post caption"},
-                                    "hashtags": {"type": "string", "description": "Hashtags string"}
-                                },
-                                "required": ["caption", "hashtags"]
-                            }
-                        }
-                    },
-                    {
-                        "type": "function",
-                        "function": {
-                            "name": "schedule_post_tool",
-                            "description": "Schedule a post to be published at a specific time.",
-                            "parameters": {
-                                "type": "object",
-                                "properties": {
-                                    "caption": {"type": "string", "description": "The post caption"},
-                                    "hashtags": {"type": "string", "description": "Hashtags string"},
-                                    "scheduled_time_str": {"type": "string", "description": "Time string like 'tomorrow 8am' or '2025-01-15 08:00'"}
-                                },
-                                "required": ["caption", "hashtags", "scheduled_time_str"]
-                            }
-                        }
-                    }
-                ]
+                payload["tools"] = tools
 
-            import asyncio
-            import time
-            try:
-                response = asyncio.run(client.chat.completions.create(**payload, timeout=45.0))
-                return {
-                    "choices": [{
-                        "message": {
-                            "content": response.choices[0].message.content or "",
-                            "tool_calls": [
-                                {"function": {"name": tc.function.name, "arguments": json.dumps(tc.function.arguments)}, "id": tc.id}
-                                for tc in response.choices[0].message.tool_calls or []
-                            ]
-                        }
-                    }]
-                }
-            except Exception as inner_e:
-                inner_str = str(inner_e)
-                inner_status = getattr(getattr(inner_e, "response", None), "status_code", 0)
-                if inner_status in [401, 429, 500, 503] or any(x in inner_str for x in ["429", "500", "503", "timeout", "Timeout", "rate"]):
-                    logger.warning(f"Model {model} fast-fail: {inner_status} {inner_str}")
-                    if inner_status == 429:
-                        time.sleep(5)
-                        logger.info(f"Cooldown: waited 5s after 429 rate limit")
-                    continue
-                raise
-        except Exception as outer_e:
-            logger.warning(f"Model {model} error: {str(outer_e)}")
-            continue
+            response = await client.chat.completions.create(**payload, timeout=45.0)
+            
+            return {
+                "choices": [{
+                    "message": {
+                        "content": response.choices[0].message.content or "",
+                        "tool_calls": [
+                            {
+                                "function": {
+                                    "name": tc.function.name,
+                                    "arguments": tc.function.arguments
+                                },
+                                "id": tc.id
+                            }
+                            for tc in (response.choices[0].message.tool_calls or [])
+                        ]
+                    }
+                }]
+            }
+            
+        except Exception as inner_e:
+            inner_str = str(inner_e)
+            inner_status = getattr(getattr(inner_e, "response", None), "status_code", 0)
+            
+            if inner_status in [401, 429, 500, 503] or any(
+                x in inner_str for x in ["429", "500", "503", "timeout", "404", "rate"]
+            ):
+                logger.warning(f"Model {model} failed: {inner_status} {inner_str[:100]}")
+                if inner_status == 429:
+                    await asyncio.sleep(3)
+                continue
+            raise
 
     raise Exception("All AI nodes are currently busy. Please try again later.")
 
@@ -198,7 +156,7 @@ def agent_node(state: AgentState) -> AgentState:
     
     for attempt in range(3):
         try:
-            result = call_openrouter_chat(messages, tools=all_tools)
+            result = asyncio.run(call_openrouter_chat(messages, tools=all_tools))
             
             content = result.get("choices", [{}])[0].get("message", {}).get("content", "")
             tool_calls = result.get("choices", [{}])[0].get("message", {}).get("tool_calls", [])
