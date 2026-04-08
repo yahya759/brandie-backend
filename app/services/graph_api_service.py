@@ -21,6 +21,7 @@ class GraphAPIService:
                 )
                 data = response.json()
                 logger.info(f"IG Account fetch response: {data}")
+                print(f"FACEBOOK API RESPONSE: {data}")
                 
                 if "error" in data:
                     error_msg = data["error"].get("message", "Unknown error")
@@ -75,6 +76,7 @@ class GraphAPIService:
                 )
                 logger.info(f"Container response status: {container_response.status_code}")
                 logger.info(f"Container response body: {container_response.text}")
+                print(f"FACEBOOK API RESPONSE: {container_response.json()}")
                 
                 if container_response.status_code != 200:
                     try:
@@ -112,6 +114,7 @@ class GraphAPIService:
                 )
                 logger.info(f"Publish response status: {publish_response.status_code}")
                 logger.info(f"Publish response body: {publish_response.text}")
+                print(f"FACEBOOK API RESPONSE: {publish_response.json()}")
                 
                 if publish_response.status_code != 200:
                     try:
@@ -152,6 +155,7 @@ class GraphAPIService:
                     }
                 )
                 logger.info(f"Token check response: {response.text}")
+                print(f"FACEBOOK API RESPONSE: {response.json()}")
                 data = response.json()
                 if "error" in data:
                     return {"valid": False, "error": data["error"]["message"]}

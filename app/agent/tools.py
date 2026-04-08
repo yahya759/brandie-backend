@@ -71,7 +71,10 @@ def publish_now_tool(
         finally:
             loop.close()
 
-        if result.get("success"):
+        print(f"FACEBOOK API RESPONSE: {result}")
+        
+        media_id = result.get("media_id")
+        if result.get("success") and media_id:
             post = Post(
                 user_id=user_id,
                 caption=caption,
@@ -84,7 +87,8 @@ def publish_now_tool(
             db.commit()
             return "تم النشر بنجاح على إنستغرام ✅"
         else:
-            return f"فشل النشر: {result.get('error', 'Unknown error')}"
+            error_msg = result.get('error', 'Unknown error')
+            return f"Failed to post: {error_msg}"
 
     except Exception as e:
         logger.error(f"publish_now_tool error: {e}")
