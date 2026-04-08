@@ -19,19 +19,11 @@ class AgentState(TypedDict):
 
 
 FALLBACK_MODELS = [
-    "google/gemini-2.0-flash-exp:free",
+    "google/gemma-4-31b-it:free",
     "google/gemma-3-27b-it:free",
+    "google/gemma-4-26b-a4b-it:free",
     "google/gemma-3-4b-it:free",
     "google/gemma-3n-e4b-it:free",
-    "qwen/qwen3.6-plus:free",
-    "stepfun/step-3.5-flash:free",
-    "nvidia/nemotron-3-super-120b-a12b:free",
-    "arcee-ai/trinity-large-preview:free",
-    "z-ai/glm-4.5-air:free",
-    "nvidia/nemotron-3-nano-30b-a3b:free",
-    "nvidia/nemotron-nano-12b-v2-vl:free",
-    "minimax/minimax-m2.5:free",
-    "nvidia/nemotron-nano-9b-v2:free",
 ]
 
 
