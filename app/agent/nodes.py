@@ -19,11 +19,10 @@ class AgentState(TypedDict):
 
 
 FALLBACK_MODELS = [
-    "google/gemma-4-31b-it:free",
-    "google/gemma-3-27b-it:free",
-    "google/gemma-4-26b-a4b-it:free",
-    "google/gemma-3-4b-it:free",
-    "google/gemma-3n-e4b-it:free",
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "deepseek/deepseek-chat:free",
+    "mistralai/pixtral-12b:free",
+    "google/gemini-2.0-flash-001:free",
 ]
 
 
