@@ -40,7 +40,8 @@ def publish_now_tool(
     hashtags: str = "",
     image_path: str = "",
 ) -> str:
-    """Publish a post to Instagram immediately. Caption, hashtags, and image_path are optional."""
+    """Publish a post to Instagram immediately using Instagram Graph API. Supports image URLs (image_path), text captions, and hashtags. Returns media_id on success."""
+    print(">>> AGENT IS NOW CALLING INSTAGRAM TOOL...")
     caption = caption or ""
     hashtags = hashtags or ""
     image_path = image_path or ""
