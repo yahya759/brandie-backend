@@ -89,7 +89,7 @@ async def call_openrouter_chat(messages: list, tools=None) -> dict:
             }
 
             if tools:
-                payload["tools"] = tools
+                payload["tools"] = convert_tools_to_openai_format(tools)
 
             response = await client.chat.completions.create(**payload, timeout=45.0)
             
@@ -125,6 +125,25 @@ async def call_openrouter_chat(messages: list, tools=None) -> dict:
             raise
 
     raise Exception("All AI nodes are currently busy. Please try again later.")
+
+
+def convert_tools_to_openai_format(tools: list) -> list:
+    """Convert LangChain StructuredTool objects to OpenAI JSON format"""
+    openai_tools = []
+    for tool in tools:
+        openai_tools.append({
+            "type": "function",
+            "function": {
+                "name": tool.name,
+                "description": tool.description,
+                "parameters": tool.args_schema.schema() if tool.args_schema else {
+                    "type": "object",
+                    "properties": {},
+                    "required": []
+                }
+            }
+        })
+    return openai_tools
 
 
 def agent_node(state: AgentState) -> AgentState:
