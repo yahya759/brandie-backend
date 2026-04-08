@@ -20,9 +20,8 @@ class AgentState(TypedDict):
 
 FALLBACK_MODELS = [
     "meta-llama/llama-3.3-70b-instruct:free",
-    "deepseek/deepseek-chat:free",
-    "mistralai/pixtral-12b:free",
     "google/gemini-2.0-flash-001:free",
+    "mistralai/pixtral-12b:free",
 ]
 
 
@@ -139,7 +138,7 @@ def call_openrouter_chat(messages: list, tools=None) -> dict:
 
             import asyncio
             try:
-                response = asyncio.run(client.chat.completions.create(**payload, timeout=15.0))
+                response = asyncio.run(client.chat.completions.create(**payload, timeout=30.0))
                 return {
                     "choices": [{
                         "message": {
