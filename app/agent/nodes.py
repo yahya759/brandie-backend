@@ -140,7 +140,7 @@ def call_openrouter_chat(messages: list, tools=None) -> dict:
             import asyncio
             import time
             try:
-                response = asyncio.run(client.chat.completions.create(**payload, timeout=60.0))
+                response = asyncio.run(client.chat.completions.create(**payload, timeout=45.0))
                 return {
                     "choices": [{
                         "message": {
@@ -158,8 +158,8 @@ def call_openrouter_chat(messages: list, tools=None) -> dict:
                 if inner_status in [401, 429, 500, 503] or any(x in inner_str for x in ["429", "500", "503", "timeout", "Timeout", "rate"]):
                     logger.warning(f"Model {model} fast-fail: {inner_status} {inner_str}")
                     if inner_status == 429:
-                        time.sleep(3)
-                        logger.info(f"Cooldown: waited 3s after 429 rate limit")
+                        time.sleep(5)
+                        logger.info(f"Cooldown: waited 5s after 429 rate limit")
                     continue
                 raise
         except Exception as outer_e:
